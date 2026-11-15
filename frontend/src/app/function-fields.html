@@ -1,0 +1,53 @@
+<div class="field-grid">
+  <label>Bedienung
+    <select [ngModel]="model().mode || 'service'" (ngModelChange)="changeMode($event)">
+      <option value="brightness">Helligkeit · 0–100 %</option>
+      <option value="service">Home-Assistant-Aktion</option>
+    </select>
+  </label>
+  <label>Entität
+    <input type="text" [attr.list]="id + '-entities'" placeholder="light.kueche" autocomplete="off"
+      [ngModel]="model().entity_id" (ngModelChange)="model().entity_id = $event; changed.emit()">
+
+  </label>
+  @if (isBrightness) {
+    <label>Schrittweite in %
+      <input type="number" min="1" max="100" step="1" [ngModel]="model().stepSize"
+        (ngModelChange)="model().stepSize = $event; changed.emit()" placeholder="10">
+    </label>
+    <label>Startwert in %
+      <input type="number" min="0" max="100" step="1" [ngModel]="model().defaultValue"
+        (ngModelChange)="model().defaultValue = $event; changed.emit()" placeholder="50">
+    </label>
+  } @else {
+    <label>Home-Assistant-Dienst
+      <input type="text" [attr.list]="id + '-services'" placeholder="light.turn_on"
+        [ngModel]="model().service" (ngModelChange)="model().service = $event; changed.emit()">
+
+    </label>
+    <label>Zustandswert <span class="optional">optional</span>
+      <input type="text" placeholder="z. B. on oder off" [ngModel]="model().state"
+        (ngModelChange)="model().state = $event || undefined; changed.emit()">
+    </label>
+  }
+</div>
+@if (isBrightness) {
+  <p class="hint">0 % schaltet aus. Beim Auswählen liest das Panel den aktuellen Wert aus Home Assistant ein.</p>
+}
+<label class="check-field">
+  <input type="checkbox" [ngModel]="model().autoExecute || false"
+    (ngModelChange)="model().autoExecute = $event; changed.emit()">
+  Nach Bestätigung automatisch ausführen
+</label>
+
+    <datalist [id]="id + '-entities'">
+      @for (entity of suggestions; track entity.entityId) {
+        <option [value]="entity.entityId">{{ entity.name }} · {{ entity.state }}</option>
+      }
+    </datalist>
+      <datalist [id]="id + '-services'">
+        <option value="light.turn_on"></option><option value="light.turn_off"></option>
+        <option value="switch.turn_on"></option><option value="switch.turn_off"></option>
+        <option value="cover.open_cover"></option><option value="cover.close_cover"></option>
+        <option value="cover.stop_cover"></option>
+      </datalist>

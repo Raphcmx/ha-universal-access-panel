@@ -1,0 +1,26 @@
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+frontend/out-tsc/
+**/bin/
+**/obj/
+backend/data/
+
+# Local instructions, credentials and runtime data
+AGENTS.md
+.agents/
+.codex/
+.env
+.env.*
+!.env.example
+.npmrc
+*.pem
+*.key
+*.pfx
+*.p12
+**/secrets.yaml
+**/last-sent.json
+**/.pending-*.json
+.vs/
+.vscode/
+*.log

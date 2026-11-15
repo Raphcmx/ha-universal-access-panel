@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="de" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <title>Universal Access Panel · Konfigurator</title>
+  <base href="./">
+  <script>
+    try {
+      document.documentElement.dataset.theme = localStorage.getItem('access-panel:theme') === 'light' ? 'light' : 'dark';
+    } catch { /* Dark mode is the default if storage is unavailable. */ }
+    // Home Assistant Ingress also opens the root URL without a trailing slash.
+    document.querySelector('base').setAttribute('href', window.location.pathname.replace(/\/?$/, '/'));
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#146356">
+</head>
+<body><app-root><p style="padding:2rem;font-family:system-ui">Universal Access Panel wird geladen …</p></app-root></body>
+</html>

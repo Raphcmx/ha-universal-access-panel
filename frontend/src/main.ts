@@ -1,0 +1,6 @@
+import { bootstrapApplication } from '@angular/platform-browser';
+import { provideZonelessChangeDetection } from '@angular/core';
+import { AppComponent } from './app/app';
+
+bootstrapApplication(AppComponent, { providers: [provideZonelessChangeDetection()] })
+  .catch(error => console.error('Access Panel konnte nicht gestartet werden.', error));

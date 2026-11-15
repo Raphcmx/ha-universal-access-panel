@@ -1,0 +1,10 @@
+**/node_modules
+**/dist
+**/.angular
+**/bin
+**/obj
+**/data
+.git
+.agents
+.codex
+backend.tests

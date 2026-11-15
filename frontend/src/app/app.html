@@ -1,0 +1,148 @@
+<div class="shell">
+  <header class="topbar">
+    <a class="brand" href="./" aria-label="Universal Access Panel Startseite"><span class="brand-mark" aria-hidden="true">▥</span><span>UAP<small>KONFIGURATOR</small></span></a>
+    <span class="panel-badge"><span class="dot"></span> Panel 1</span>
+    <button type="button" class="theme-toggle" (click)="toggleTheme()" [attr.aria-pressed]="darkMode()" aria-label="Darkmode">Darkmode {{ darkMode() ? 'an' : 'aus' }}</button>
+  </header>
+
+  <main>
+    <div class="page-heading">
+      <div><p class="eyebrow">DEIN PANEL</p><h1>Universal Access Panel</h1><p class="subtitle">Gruppen ordnen. Funktionen gestalten. Panel konfigurieren.</p></div>
+      @if (view() === 'editor') {
+        <button class="primary" (click)="publish()" [disabled]="loading() || publishing() || errors().length > 0">
+          {{ publishing() ? 'Wird gesendet …' : 'An Panel senden' }} <span aria-hidden="true">↗</span>
+        </button>
+      } @else {
+        <button class="primary" (click)="view.set('editor')">Entwurf bearbeiten <span aria-hidden="true">↗</span></button>
+      }
+    </div>
+
+    <div class="workspace-bar">
+      <nav class="tabs" aria-label="Konfigurationsansicht">
+        <button [class.active]="view() === 'editor'" [attr.aria-current]="view() === 'editor' ? 'page' : null" (click)="view.set('editor')">Editor <span class="count">{{ config.groups.length }}</span></button>
+        <button [class.active]="view() === 'last'" [attr.aria-current]="view() === 'last' ? 'page' : null" (click)="view.set('last')">Zuletzt erfolgreich gesendet</button>
+      </nav>
+      <span class="draft-indicator" [class.changed]="hasChanges()"><span class="dot"></span>{{ hasChanges() ? 'Entwurf geändert' : latest() ? 'Entwurf entspricht gesendetem Stand' : 'Noch nicht gesendet' }}</span>
+    </div>
+
+    @if (notice()) {
+      <div class="notice" [class.error]="noticeError()" role="status"><span>{{ notice() }}</span><button class="icon-button" aria-label="Meldung schließen" (click)="notice.set('')">×</button></div>
+    }
+    @if (loading()) {
+      <section class="card empty-state" role="status"><h2>Konfiguration wird geladen …</h2></section>
+    } @else if (view() === 'editor') {
+      <div class="editor-layout">
+        <aside class="card structure">
+          <div class="section-heading"><div><p class="eyebrow">STRUKTUR</p><h2>Deine Gruppen</h2></div><button class="icon-button outlined" (click)="addGroup()" aria-label="Gruppe hinzufügen">+</button></div>
+          <p class="hint">Die Reihenfolge hier entspricht dem Menü auf deinem Panel.</p>
+          <div class="group-list">
+            @for (group of config.groups; track group; let i = $index) {
+              <section class="group" [class.selected]="selectedGroup === group">
+                <button class="group-button" [attr.aria-pressed]="selectedGroup === group" (click)="selectGroup(group)"><span class="group-icon" aria-hidden="true">▦</span><span>{{ group.name || 'Unbenannte Gruppe' }}</span><span class="count">{{ group.functions.length }}</span></button>
+                @if (selectedGroup === group) {
+                  <div class="group-functions">
+                    @for (ref of group.functions; track ref; let j = $index) {
+                      <div class="function-row" [class.selected]="selectedFunction === resolve(ref)">
+                        <button class="function-button" (click)="selectFunction(resolve(ref))"><span aria-hidden="true">{{ resolve(ref)?.type === 'COMPOSED' ? '≡' : '◉' }}</span><span>{{ ref.name || 'Unbenannte Funktion' }}<small>{{ resolve(ref) ? label(resolve(ref)!) : 'Verweis ungültig' }}</small></span></button>
+                        <div class="row-actions"><button class="icon-button" aria-label="Funktion nach oben" [disabled]="j === 0" (click)="reorder(group.functions, j, -1)">↑</button><button class="icon-button" aria-label="Funktion nach unten" [disabled]="j === group.functions.length - 1" (click)="reorder(group.functions, j, 1)">↓</button></div>
+                      </div>
+                    } @empty { <p class="hint inset">Diese Gruppe ist noch leer.</p> }
+                  </div>
+                  <div class="group-tools"><button class="text-button" [disabled]="i === 0" (click)="reorder(config.groups, i, -1)">↑ Hoch</button><button class="text-button" [disabled]="i === config.groups.length - 1" (click)="reorder(config.groups, i, 1)">↓ Runter</button></div>
+                }
+              </section>
+            } @empty {
+              <div class="small-empty"><span aria-hidden="true">▦</span><p>Ein guter Anfang:<br>deine erste Gruppe.</p></div>
+            }
+          </div>
+          <button class="add-button" (click)="addGroup()">+ Gruppe hinzufügen</button>
+          <details class="library" open>
+            <summary>Funktionsbibliothek <span class="count">{{ config.allFunctions.length }}</span></summary>
+            <p class="hint">Alle Funktionen, auch ohne Gruppenzuordnung.</p>
+            @for (fn of config.allFunctions; track fn) {
+              <button class="library-item" [class.selected]="selectedFunction === fn" (click)="selectFunction(fn)"><span>{{ fn.name || 'Unbenannte Funktion' }}<small>{{ fn.deviceName }} · {{ label(fn) }}</small></span><span aria-hidden="true">↗</span></button>
+            } @empty { <p class="hint">Noch keine Funktionen angelegt.</p> }
+          </details>
+        </aside>
+
+        <div class="editor-main">
+          @if (selectedGroup; as group) {
+            <section class="card group-settings">
+              <div class="section-heading"><div><p class="eyebrow">GRUPPE</p><h2>{{ group.name || 'Neue Gruppe' }}</h2></div><button class="text-button danger" (click)="deleteGroup(group)">Gruppe löschen</button></div>
+              <label>Gruppenname<input type="text" maxlength="255" [ngModel]="group.name" (ngModelChange)="group.name = $event; changed()" placeholder="z. B. Deckenlicht Küche"></label>
+              <div class="add-functions"><span>Neue Funktion</span><button (click)="addFunction('brightness')">+ Helligkeit</button><button (click)="addFunction('composed')">+ Aktionsauswahl</button><button (click)="addFunction('service')">+ HA-Aktion</button></div>
+            </section>
+          }
+          @if (selectedFunction; as fn) {
+            <section class="card function-editor">
+              <div class="section-heading"><div><p class="eyebrow">{{ fn.type === 'COMPOSED' ? 'COMPOSED · AKTIONSAUSWAHL' : 'HOME ASSISTANT · FUNKTION' }}</p><h2>{{ fn.name || 'Neue Funktion' }}</h2></div><button class="text-button" (click)="duplicateFunction(fn)">Duplizieren</button></div>
+              <div class="field-grid">
+                <label>Funktionsname<input type="text" maxlength="255" [ngModel]="fn.name" (ngModelChange)="rename(fn, 'name', $event)"></label>
+                <label>Gerätekennung<input type="text" maxlength="255" [ngModel]="fn.deviceName" (ngModelChange)="rename(fn, 'deviceName', $event)"></label>
+              </div>
+              <p class="hint">Name und Gerätekennung identifizieren die Funktion. Gruppenverweise werden beim Umbenennen aktualisiert.</p>
+
+              @if (fn.type === 'COMPOSED') {
+                <label class="check-field"><input type="checkbox" [ngModel]="fn.autoExecute || false" (ngModelChange)="fn.autoExecute = $event; changed()">Nach Bestätigung automatisch ausführen</label>
+                <p class="hint auto-hint">Zuerst einmal mit der Aktionstaste bestätigen. Danach führt das Panel Regleränderungen automatisch aus. Beim Geräte- oder Funktionswechsel wird die Automatik pausiert.</p>
+                <div class="actions-heading"><h3>Enthaltene Aktionen <span class="count">{{ fn.functions?.length || 0 }}</span></h3><button class="text-button" (click)="addAction(fn)">+ Aktion hinzufügen</button></div>
+                <p class="hint">Der Schieberegler wählt zwischen diesen Aktionen, in der angegebenen Reihenfolge.</p>
+                @for (action of fn.functions || []; track action; let i = $index) {
+                  <article class="action-card">
+                    <div class="action-heading"><span class="action-number">{{ i + 1 }}</span><label>Aktionsname<input type="text" maxlength="255" [ngModel]="action.name" (ngModelChange)="action.name = $event; changed()"></label><div class="row-actions"><button class="icon-button outlined" aria-label="Aktion nach oben" [disabled]="i === 0" (click)="reorder(fn.functions!, i, -1)">↑</button><button class="icon-button outlined" aria-label="Aktion nach unten" [disabled]="i === fn.functions!.length - 1" (click)="reorder(fn.functions!, i, 1)">↓</button><button class="icon-button danger" aria-label="Aktion löschen" (click)="removeAction(fn, i)">×</button></div></div>
+                    <function-fields [model]="action" [entities]="entities()" (changed)="changed()" />
+                  </article>
+                } @empty { <p class="hint">Füge mindestens eine Aktion hinzu.</p> }
+                <button class="add-button" (click)="addAction(fn)">+ Weitere Aktion hinzufügen</button>
+              } @else {
+                <function-fields [model]="fn" [entities]="entities()" (changed)="changed()" />
+                <p class="hint auto-hint">Automatik: Einmal manuell bestätigen, danach werden Regleränderungen direkt ausgeführt. Ein Wechsel pausiert die Automatik wieder.</p>
+              }
+
+              <div class="assignment"><h3>In Gruppen anzeigen</h3><div class="assignment-options">@for (group of config.groups; track group) { <label class="check-field"><input type="checkbox" [ngModel]="assigned(group, fn)" (ngModelChange)="assign(group, fn, $event)">{{ group.name || 'Unbenannte Gruppe' }}</label> } @empty { <p class="hint">Lege zuerst eine Gruppe an.</p> }</div></div>
+              <div class="editor-footer"><span class="hint">Änderungen betreffen alle Gruppen mit dieser Funktion.</span><button class="text-button danger" (click)="deleteFunction(fn)">Funktion löschen</button></div>
+            </section>
+          } @else {
+            <section class="card empty-state"><div class="empty-icon" aria-hidden="true">☷</div><p class="eyebrow">PLATZ FÜR DEINE IDEEN</p><h2>{{ selectedGroup ? 'Was möchtest du steuern?' : 'Dein Panel beginnt mit einer Gruppe.' }}</h2><p>{{ selectedGroup ? 'Füge Helligkeit, eine Aktionsauswahl oder eine einzelne Aktion hinzu.' : 'Zum Beispiel „Deckenlicht Küche“. Darin ordnest du die passenden Funktionen an.' }}</p>@if (!selectedGroup) { <button class="primary" (click)="addGroup()">+ Erste Gruppe anlegen</button> }</section>
+          }
+          <section class="card connection-card"><div><h3>Home-Assistant-Entitäten</h3><p class="hint">{{ entitiesLoading() ? 'Entitäten werden geladen …' : entities().length + ' Entitäten für die Eingabevorschläge verfügbar.' }}</p>@if (entityError()) { <p class="inline-error">{{ entityError() }}</p><p class="hint">Du kannst Entitäts-IDs weiterhin manuell eingeben.</p> }</div><button (click)="loadEntities()" [disabled]="entitiesLoading()">Aktualisieren</button></section>
+        </div>
+      </div>
+
+      <section class="card review-card">
+        <div class="section-heading"><div><p class="eyebrow">VOR DEM SENDEN</p><h2>Konfiguration prüfen</h2></div><span class="status-pill" [class.invalid]="errors().length">{{ errors().length ? errors().length + ' offene Angaben' : 'Bereit zum Senden' }}</span></div>
+        @if (errors().length) { <details class="validation" open><summary>Diese Angaben fehlen oder sind ungültig</summary><ul>@for (error of errors(); track $index) { <li>{{ error }}</li> }</ul></details> }
+        <details class="json-preview"><summary>JSON-Vorschau des Entwurfs</summary><pre>{{ json(config) }}</pre></details>
+        <div class="review-actions"><button (click)="validateOnServer()" [disabled]="checking()">{{ checking() ? 'Wird geprüft …' : 'Auf Server prüfen' }}</button><button (click)="download(config, 'panel1-entwurf.json')">JSON herunterladen</button><button (click)="showImport = !showImport">JSON importieren</button><button (click)="testMqtt()" [disabled]="testing()">{{ testing() ? 'MQTT-Test läuft …' : 'MQTT testen' }}</button></div>
+        @if (showImport) { <div class="import-area"><label for="import-json">Vorhandene Konfiguration einfügen</label><textarea id="import-json" [(ngModel)]="importText" rows="12" spellcheck="false" placeholder="JSON mit allFunctions und groups"></textarea><p class="hint">Der Import ersetzt nur den Entwurf. An das Panel wird erst über „An Panel senden“ übertragen.</p><button class="primary" (click)="importJson()" [disabled]="!importText.trim()">Prüfen und als Entwurf übernehmen</button></div> }
+      </section>
+      @if (latestError()) { <div class="notice error" role="status">{{ latestError() }} <button (click)="refreshLatest()">Erneut laden</button></div> }
+    } @else {
+      <section class="card saved-card">
+        <div class="section-heading"><div><p class="eyebrow">GESPEICHERTER STAND</p><h2>Zuletzt erfolgreich gesendet</h2></div><button (click)="refreshLatest()">Aktualisieren</button></div>
+        @if (latestError()) { <p class="inline-error" role="alert">{{ latestError() }}</p> }
+        <p class="hint">Dieser Stand wurde vom MQTT-Broker bestätigt und im Add-on gespeichert. Die Panelantwort wird separat angezeigt.</p>
+        @if (latest(); as saved) {
+          @if (saved.panelStatus; as status) {
+            <div class="notice" [class.error]="status.status === 'error'" role="status"><div>
+              <strong>{{ status.status === 'ok' ? 'Panel meldet OK' : 'Panel meldet Fehler' }}</strong>
+              <p>{{ formatDate(status.receivedAt) }} · {{ status.changed === true ? 'Konfiguration geändert' : status.changed === false ? 'Konfiguration unverändert' : 'Änderungsstatus unbekannt' }}</p>
+              @if (status.error) { <p>{{ status.error }}</p> }
+              <p>Gruppen: {{ status.groups ?? '–' }} · Funktionen: {{ status.functions ?? '–' }}</p>
+              <p>Config-Hash: <code>{{ status.configHash || '–' }}</code></p>
+              <p class="hint">Neue Statusantwort nach dem Senden empfangen. Zuordnung über den Empfangszeitpunkt; kein Hash-Abgleich.</p>
+            </div></div>
+          } @else {
+            <p class="hint">Keine neue gültige Panelantwort für diesen Versand gespeichert.</p>
+          }
+          <div class="saved-meta"><div><span>Gesendet am</span><strong>{{ formatDate(saved.sentAt) }}</strong></div><div><span>MQTT-Topic</span><code>{{ saved.topic }}</code></div><div><span>Übertragung</span><strong>QoS {{ saved.qos }} · Retain {{ saved.retain ? 'aktiv' : 'inaktiv' }}</strong></div></div>
+          <div class="saved-groups">@for (group of saved.configuration.groups; track $index) { <article><h3>{{ group.name }}</h3><ul>@for (ref of group.functions; track $index) { <li>{{ ref.name }}<small>{{ ref.deviceName }}</small></li> }</ul></article> }</div>
+          <div class="review-actions"><button class="primary" (click)="restoreLast()">Als Entwurf übernehmen</button><button (click)="download(saved.configuration, 'panel1-zuletzt-gesendet.json')">JSON herunterladen</button></div>
+          <details class="json-preview" open><summary>Gesendete JSON-Konfiguration</summary><pre>{{ json(saved.configuration) }}</pre></details>
+        } @else { <div class="small-empty"><p>Noch keine erfolgreich gesendete Konfiguration gespeichert.</p><p class="hint">Bestehende MQTT-Konfigurationen aus der Zeit vor diesem Editor werden nicht automatisch eingelesen. Du kannst sie im Editor als JSON importieren.</p><button (click)="view.set('editor')">Zum Editor</button></div> }
+      </section>
+    }
+    @if (serverErrors().length) { <section class="notice error" role="alert"><div><strong>Hinweise zur Konfiguration</strong><ul>@for (error of serverErrors(); track $index) { <li>{{ error }}</li> }</ul></div></section> }
+    <footer class="page-footer"><span>{{ draftStorageMessage() }}</span><span>Version 0.4.3 &#183; Panel 1 · QoS 1 · Retain aktiv</span></footer>
+  </main>
+</div>

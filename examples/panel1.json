@@ -1,0 +1,34 @@
+{
+  "allFunctions": [
+    {
+      "type": "HOMEASSISTANT", "name": "Deckenlicht Büro", "deviceName": "Beleuchtung",
+      "entity_id": "light.example_ceiling", "mode": "brightness", "stepSize": 10, "defaultValue": 50, "autoExecute": false
+    },
+    {
+      "type": "HOMEASSISTANT", "name": "Wandlicht Büro", "deviceName": "Beleuchtung",
+      "entity_id": "light.example_wall", "mode": "brightness", "stepSize": 10, "defaultValue": 50, "autoExecute": false
+    },
+    {
+      "type": "COMPOSED", "name": "Bürolicht", "deviceName": "Beleuchtung", "autoExecute": false,
+      "functions": [
+        { "type": "HOMEASSISTANT", "name": "aus", "entity_id": "light.example_ceiling", "service": "light.turn_off", "state": "off" },
+        { "type": "HOMEASSISTANT", "name": "ein", "entity_id": "light.example_ceiling", "service": "light.turn_on", "state": "on" }
+      ]
+    },
+    {
+      "type": "COMPOSED", "name": "Wandlicht", "deviceName": "Beleuchtung", "autoExecute": false,
+      "functions": [
+        { "type": "HOMEASSISTANT", "name": "aus", "entity_id": "light.example_wall", "service": "light.turn_off", "state": "off" },
+        { "type": "HOMEASSISTANT", "name": "ein", "entity_id": "light.example_wall", "service": "light.turn_on", "state": "on" }
+      ]
+    }
+  ],
+  "groups": [
+    { "name": "Beleuchtung", "functions": [
+      { "name": "Deckenlicht Büro", "deviceName": "Beleuchtung" }, { "name": "Bürolicht", "deviceName": "Beleuchtung" }
+    ] },
+    { "name": "Wandlicht", "functions": [
+      { "name": "Wandlicht Büro", "deviceName": "Beleuchtung" }, { "name": "Wandlicht", "deviceName": "Beleuchtung" }
+    ] }
+  ]
+}
