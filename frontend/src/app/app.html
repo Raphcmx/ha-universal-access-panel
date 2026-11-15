@@ -56,7 +56,7 @@
             }
           </div>
           <button class="add-button" (click)="addGroup()">+ Gruppe hinzufügen</button>
-          <details class="library" open>
+          <details class="library">
             <summary>Funktionsbibliothek <span class="count">{{ config.allFunctions.length }}</span></summary>
             <p class="hint">Alle Funktionen, auch ohne Gruppenzuordnung.</p>
             @for (fn of config.allFunctions; track fn) {
@@ -84,7 +84,7 @@
 
               @if (fn.type === 'COMPOSED') {
                 <label class="check-field"><input type="checkbox" [ngModel]="fn.autoExecute || false" (ngModelChange)="fn.autoExecute = $event; changed()">Nach Bestätigung automatisch ausführen</label>
-                <p class="hint auto-hint">Zuerst einmal mit der Aktionstaste bestätigen. Danach führt das Panel Regleränderungen automatisch aus. Beim Geräte- oder Funktionswechsel wird die Automatik pausiert.</p>
+                <p class="hint auto-hint">Bei aktivierter Automatik einmal mit der Aktionstaste bestätigen. Danach wird jede weitere Regleränderung sofort ausgeführt, ohne erneut zu bestätigen. Nach einem Geräte- oder Funktionswechsel ist wieder eine erste Bestätigung nötig.</p>
                 <div class="actions-heading"><h3>Enthaltene Aktionen <span class="count">{{ fn.functions?.length || 0 }}</span></h3><button class="text-button" (click)="addAction(fn)">+ Aktion hinzufügen</button></div>
                 <p class="hint">Der Schieberegler wählt zwischen diesen Aktionen, in der angegebenen Reihenfolge.</p>
                 @for (action of fn.functions || []; track action; let i = $index) {
@@ -96,7 +96,7 @@
                 <button class="add-button" (click)="addAction(fn)">+ Weitere Aktion hinzufügen</button>
               } @else {
                 <function-fields [model]="fn" [entities]="entities()" (changed)="changed()" />
-                <p class="hint auto-hint">Automatik: Einmal manuell bestätigen, danach werden Regleränderungen direkt ausgeführt. Ein Wechsel pausiert die Automatik wieder.</p>
+                <p class="hint auto-hint">Bei aktivierter Automatik einmal mit der Aktionstaste bestätigen. Danach wird jede weitere Regleränderung sofort ausgeführt, ohne erneut zu bestätigen. Nach einem Geräte- oder Funktionswechsel ist wieder eine erste Bestätigung nötig.</p>
               }
 
               <div class="assignment"><h3>In Gruppen anzeigen</h3><div class="assignment-options">@for (group of config.groups; track group) { <label class="check-field"><input type="checkbox" [ngModel]="assigned(group, fn)" (ngModelChange)="assign(group, fn, $event)">{{ group.name || 'Unbenannte Gruppe' }}</label> } @empty { <p class="hint">Lege zuerst eine Gruppe an.</p> }</div></div>
@@ -113,7 +113,7 @@
         <div class="section-heading"><div><p class="eyebrow">VOR DEM SENDEN</p><h2>Konfiguration prüfen</h2></div><span class="status-pill" [class.invalid]="errors().length">{{ errors().length ? errors().length + ' offene Angaben' : 'Bereit zum Senden' }}</span></div>
         @if (errors().length) { <details class="validation" open><summary>Diese Angaben fehlen oder sind ungültig</summary><ul>@for (error of errors(); track $index) { <li>{{ error }}</li> }</ul></details> }
         <details class="json-preview"><summary>JSON-Vorschau des Entwurfs</summary><pre>{{ json(config) }}</pre></details>
-        <div class="review-actions"><button (click)="validateOnServer()" [disabled]="checking()">{{ checking() ? 'Wird geprüft …' : 'Auf Server prüfen' }}</button><button (click)="download(config, 'panel1-entwurf.json')">JSON herunterladen</button><button (click)="showImport = !showImport">JSON importieren</button><button (click)="testMqtt()" [disabled]="testing()">{{ testing() ? 'MQTT-Test läuft …' : 'MQTT testen' }}</button></div>
+        <div class="review-actions"><button (click)="download(config, 'panel1-entwurf.json')">JSON herunterladen</button><button (click)="showImport = !showImport">JSON importieren</button><button (click)="testMqtt()" [disabled]="testing()">{{ testing() ? 'MQTT-Test läuft …' : 'MQTT testen' }}</button></div>
         @if (showImport) { <div class="import-area"><label for="import-json">Vorhandene Konfiguration einfügen</label><textarea id="import-json" [(ngModel)]="importText" rows="12" spellcheck="false" placeholder="JSON mit allFunctions und groups"></textarea><p class="hint">Der Import ersetzt nur den Entwurf. An das Panel wird erst über „An Panel senden“ übertragen.</p><button class="primary" (click)="importJson()" [disabled]="!importText.trim()">Prüfen und als Entwurf übernehmen</button></div> }
       </section>
       @if (latestError()) { <div class="notice error" role="status">{{ latestError() }} <button (click)="refreshLatest()">Erneut laden</button></div> }
@@ -143,6 +143,6 @@
       </section>
     }
     @if (serverErrors().length) { <section class="notice error" role="alert"><div><strong>Hinweise zur Konfiguration</strong><ul>@for (error of serverErrors(); track $index) { <li>{{ error }}</li> }</ul></div></section> }
-    <footer class="page-footer"><span>{{ draftStorageMessage() }}</span><span>Version 0.4.3 &#183; Panel 1 · QoS 1 · Retain aktiv</span></footer>
+    <footer class="page-footer"><span>{{ draftStorageMessage() }}</span><span>Version 0.4.4 &#183; Panel 1 · QoS 1 · Retain aktiv</span></footer>
   </main>
 </div>

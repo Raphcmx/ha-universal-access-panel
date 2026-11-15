@@ -1,96 +1,63 @@
 # Universal Access Panel (UAP)
 
-Home-Assistant-Add-on mit ASP.NET Core (.NET 10), Angular 22, HTML, CSS und TypeScript. Aktuell wird genau ein Panel über `bedienpanel/panel1/config` konfiguriert.
+Mit diesem Home-Assistant-Add-on stellst du zusammen, welche Geräte und Aktionen dein Universal Access Panel bedienen soll. Du ordnest Funktionen in Gruppen, wählst die passenden Home-Assistant-Entitäten aus und sendest die Konfiguration per MQTT an das Panel. Aktuell wird ein Panel über `bedienpanel/panel1/config` unterstützt.
 
-## Installation in Home Assistant
+## Installation
 
-Im Add-on-Store unter Repositorys die URL https://github.com/Raphcmx/ha-universal-access-panel hinzufügen. Danach Universal Access Panel installieren, bauen und starten. MQTT muss in Home Assistant verfügbar sein.
+1. Im Home-Assistant-Add-on-Store unter **Repositorys** die URL https://github.com/Raphcmx/ha-universal-access-panel hinzufügen.
+2. **Universal Access Panel** installieren und starten. MQTT muss in Home Assistant verfügbar sein.
+3. Die Weboberfläche des Add-ons öffnen. Nach Updates das Add-on aktualisieren und neu starten; bei einer lokalen Installation neu bauen.
 
-Das Beispiel in `examples/panel1.json` verwendet fiktive Entitäts-IDs. Diese vor dem Senden durch eigene Entitäten ersetzen. Zugangsdaten werden zur Laufzeit vom Supervisor bezogen und gehören nicht in das Repository.
+Die MQTT-Zugangsdaten bezieht das Add-on automatisch vom Home-Assistant-Supervisor. Du musst keine Tokens oder Passwörter im Editor eintragen.
 
-## Im Add-on verwenden
+## Gruppen und Funktionen
 
-1. Das Add-on nach der Aktualisierung auf Version `0.4.3` neu bauen und starten. Der Docker-Build baut das Angular-Frontend automatisch und integriert es in das .NET-Backend.
-2. Über Home Assistant die Weboberfläche öffnen.
-3. Eine Gruppe anlegen oder unter „JSON importieren“ eine vorhandene Konfiguration einfügen. `examples/panel1.json` enthält das bereitgestellte Firmware-Beispiel. Es wird nicht automatisch als aktuelle Konfiguration übernommen.
-4. Funktionen anlegen, konfigurieren und einer oder mehreren Gruppen zuordnen. „Aktionsauswahl“ erzeugt eine `COMPOSED`-Funktion; darin lassen sich weitere Aktionen ergänzen und sortieren.
-5. Die JSON-Vorschau prüfen und „An Panel senden“ wählen. Die Übertragung verwendet QoS 1 und Retain.
+**Gruppen** bilden das Menü auf deinem Panel, beispielsweise „Beleuchtung“ oder „Wohnzimmer“. Ihre Reihenfolge im Editor entspricht der Reihenfolge auf dem Panel.
 
-Gruppen referenzieren Funktionen über `name` und `deviceName`. Die Gerätekennung ist unabhängig vom Gruppennamen. Umbenennen aktualisiert alle Verweise; Löschen einer Gruppe erhält ihre Funktionen in der Bibliothek. Löschen einer Funktion entfernt sie aus allen Gruppen.
+In einer Gruppe legst du die gewünschten Funktionen an:
 
-## Entwurf und gesendeter Stand
+- **Helligkeit:** Die Helligkeit einer Licht-Entität über den Regler ändern. Schrittweite und Startwert sind einstellbar. Beim Auswählen übernimmt die Firmware den tatsächlichen Home-Assistant-Wert.
+- **HA-Aktion:** Einen Home-Assistant-Dienst für eine Entität ausführen, beispielsweise ein Licht einschalten oder einen Rollladen stoppen.
+- **Aktionsauswahl:** Mehrere benannte Aktionen zusammenfassen. Der Regler wählt zwischen ihnen, beispielsweise „aus“ und „ein“. Die Reihenfolge der Aktionen lässt sich ändern.
 
-- Der Entwurf wird bei Änderungen im Local Storage dieses Browsers gesichert. Die Sicherung gehört zur jeweiligen Ingress-Adresse; ein anderer Browser oder eine andere Adresse hat einen eigenen Entwurf. Falls die Sicherung nicht verfügbar ist, zeigt die Oberfläche einen Hinweis. JSON-Downloads ermöglichen eine zusätzliche Sicherung.
-- „Zuletzt erfolgreich gesendet“ zeigt ausschließlich eine Konfiguration, die die Backend-Prüfung bestanden hat und vom MQTT-Broker bestätigt wurde. Sie liegt samt Zeitpunkt und MQTT-Metadaten unter `/data/last-sent.json` und überlebt Add-on-Neustarts und -Updates.
-- Validierungsfehler und fehlgeschlagene Übertragungen überschreiben den gespeicherten Stand nicht. Falls nach der Brokerbestätigung das Speichern scheitert, weist die Oberfläche ausdrücklich darauf hin.
-- Vor dem Senden wird `bedienpanel/panel1/config/status` abonniert. Alte Retain-Zustellungen werden ignoriert. Nach PUBACK wird bis zu acht Sekunden (innerhalb des gesamten Anfragezeitlimits) auf eine neue gültige Statusantwort gewartet. `ok` und `error`, Änderungsflag, Config-Hash, Zähler und Fehlertext werden beim Sendestand gespeichert und angezeigt. `changed: false` ist ein Erfolg ohne Änderung. Ohne neue Antwort bleibt der brokerbestätigte Stand gespeichert. Spätere Antworten werden derzeit nicht nachgeladen. Die Zuordnung erfolgt zeitlich; ohne bekannte Firmware-Hashberechnung oder Request-ID ist kein eindeutiger Abgleich mit dem gesendeten Inhalt möglich.
-- Bereits vor Version 0.4.0 gesendete MQTT-Konfigurationen werden nicht automatisch eingelesen. Vorhandenes JSON als Entwurf importieren und bei Bedarf erneut senden.
-- „Als Entwurf übernehmen“ kopiert den gesendeten Stand in den Editor, ohne ihn erneut zu senden.
+Eine Funktion kann mehreren Gruppen zugeordnet werden. Änderungen an ihr gelten dann in allen zugeordneten Gruppen. Name und Gerätekennung identifizieren die Funktion; beim Umbenennen aktualisiert der Editor die Gruppenverweise automatisch.
 
-## Unterstützte Funktionen
+Die standardmäßig eingeklappte **Funktionsbibliothek** enthält alle Funktionen, auch solche ohne Gruppenzuordnung. Beim Löschen einer Gruppe bleiben ihre Funktionen dort erhalten und können wieder zugeordnet werden. „Funktion löschen“ entfernt die Funktion dagegen aus der Bibliothek und allen Gruppen.
 
-- `HOMEASSISTANT` / `brightness`: Licht-Entität, Schrittweite 1–100, Startwert 0–100 und `autoExecute`. Beim Auswählen übernimmt die Firmware den tatsächlichen HA-Wert.
-- `HOMEASSISTANT` / `service`: Entität, Dienst, optionaler `state`-Text und `autoExecute`. Fehlendes `mode` bedeutet `service`; der Import erhält diese Schreibweise.
-- `COMPOSED`: benannte Auswahl aus beliebig ergänzbaren `HOMEASSISTANT`-Aktionen, jeweils mit eigenen Einstellungen. Verschachtelte `COMPOSED`-Funktionen werden derzeit nicht angeboten.
-- `autoExecute`: Nach einmaliger manueller Bestätigung werden weitere Regleränderungen automatisch ausgeführt. Ein Geräte- oder Funktionswechsel pausiert die Automatik.
+## Nach Bestätigung automatisch ausführen
 
-Rollo-Öffnen/-Schließen/-Stopp können als Dienste angelegt werden. Ein Positionsregler ist noch kein unterstützter Firmware-Modus. Der Editor erzeugt dafür keinen erfundenen Modus. Das optionale `state`-Feld wird unverändert übertragen; die Auswertung liegt bei der Firmware.
+Diese Option bestimmt, ob du Änderungen am Panel jedes Mal mit der Aktionstaste bestätigen musst.
 
-Es gibt keine feste Anzahlbegrenzung für Gruppen, Funktionen oder Aktionen im Editor. Die gesamte API-Anfrage ist auf 1 MiB begrenzt. Speicher- und Payload-Grenzen der Panel-Firmware gelten zusätzlich.
+**Mit aktivierter Option:**
 
-## Lokal entwickeln
+1. Am Panel das gewünschte Gerät und die Funktion auswählen.
+2. Den gewünschten Wert beziehungsweise die Aktion einstellen und **einmal mit der Aktionstaste bestätigen**.
+3. Danach wird jede weitere Regleränderung **sofort ausgeführt**, ohne erneut die Aktionstaste zu drücken.
 
-Voraussetzungen: .NET SDK 10 und Node.js 24.15 oder neuer innerhalb der 24er-Reihe. Installierte Versionen sind in `frontend/package-lock.json` festgehalten.
+Beispiel: Du bestätigst die Helligkeit eines Lichts einmal. Anschließend wird das Licht beim weiteren Verstellen des Reglers direkt heller oder dunkler.
 
-Backend, im Projektverzeichnis:
+**Nach einem Geräte- oder Funktionswechsel ist wieder eine erste Bestätigung nötig.** Die Automatik gilt also für die aktuell bestätigte Auswahl, nicht dauerhaft für alle Funktionen.
 
-```powershell
-dotnet run --project backend/AccessPanel.Api.csproj
-```
+Bei deaktivierter Option musst du jede Änderung mit der Aktionstaste bestätigen. Die Einstellung betrifft die Bedienung am Panel; Änderungen im Konfigurator überträgst du weiterhin über **„An Panel senden“**.
 
-Frontend, in einem zweiten Terminal:
+## Konfiguration senden
 
-```powershell
-cd frontend
-npm ci
-npm start
-```
+Fehlende oder ungültige Angaben zeigt der Editor automatisch an. Solange Fehler bestehen, ist „An Panel senden“ gesperrt. Beim Senden prüft das Backend die Konfiguration nochmals; ein separater Prüfschritt ist nicht nötig.
 
-Das Frontend läuft auf `http://127.0.0.1:4200`; API-Anfragen werden an Port 8099 weitergereicht. Unter Windows speichert das Backend standardmäßig in `backend/data`, unter Linux in `/data`. Für einen anderen Ort `--DataDirectory <Pfad>` übergeben. Die Adresse lässt sich mit `--urls http://127.0.0.1:8099` konfigurieren.
+Mit **„An Panel senden“** überträgst du die gesamte Konfiguration und ersetzt die bisherige MQTT-Konfiguration. Die Übertragung verwendet QoS 1 und Retain. Eine gültige Konfiguration garantiert noch nicht, dass das Panel sie erfolgreich anwenden kann: Beachte deshalb die Rückmeldung nach dem Senden.
 
-Ohne Home-Assistant-Supervisor und `SUPERVISOR_TOKEN` funktionieren Editor, JSON-Import und Validierung; Entitätsabruf und MQTT melden einen kontrollierten Fehler. Entitäts-IDs können manuell eingegeben werden. Supervisor-Tokens gehören ausschließlich ins Backend.
+Unter **„Zuletzt erfolgreich gesendet“** findest du den vom MQTT-Broker bestätigten und gespeicherten Stand. Die Panel-Rückmeldung wird gesondert angezeigt: OK, Fehler oder keine neue Antwort innerhalb der Wartezeit. Eine Brokerbestätigung allein bestätigt noch nicht die Übernahme am Panel. Später eintreffende Panelantworten werden derzeit nicht nachgeladen.
 
-Produktions-Build des Frontends:
+## Entwürfe, Import und Sicherung
 
-```powershell
-cd frontend
-npm run build
-```
+- Änderungen werden automatisch als Entwurf im Local Storage dieses Browsers gesichert. Ein anderer Browser oder eine andere Ingress-Adresse hat einen eigenen Entwurf.
+- Der bestätigte Sendestand bleibt unter `/data/last-sent.json` auch nach Add-on-Neustarts und -Updates erhalten. Validierungsfehler und fehlgeschlagene Übertragungen überschreiben ihn nicht. Falls die Speicherung nach der Brokerbestätigung scheitert, zeigt die App einen Fehler.
+- **„Als Entwurf übernehmen“** lädt den zuletzt gesendeten Stand zum Bearbeiten, ohne ihn erneut zu senden.
+- **„JSON herunterladen“** sichert eine Konfiguration als Datei. **„JSON importieren“** prüft vorhandenes JSON und übernimmt es als Entwurf; gesendet wird erst über „An Panel senden“.
+- `examples/panel1.json` enthält ein Beispiel mit fiktiven Entitäts-IDs. Ersetze diese vor dem Senden durch eigene Entitäten. Das Beispiel wird nicht automatisch geladen.
 
-Im Add-on liefert ASP.NET die gebauten Dateien aus `wwwroot` aus. Ein zusätzlicher Node-Server läuft dort nicht. Relative Asset- und API-Adressen unterstützen Home-Assistant-Ingress, auch bei einem Aufruf ohne abschließenden Schrägstrich.
+## Grenzen
 
-## Prüfungen
+Rollladen-Öffnen, -Schließen und -Stopp lassen sich als HA-Aktionen anlegen. Ein Positionsregler ist derzeit kein unterstützter Firmware-Modus. Verschachtelte Aktionsauswahlen werden nicht angeboten.
 
-```powershell
-cd frontend
-npm test
-npm run build
-```
-
-Im Projektverzeichnis:
-
-```powershell
-dotnet run --project backend.tests/AccessPanel.Tests.csproj -c Release
-```
-
-Die Tests prüfen unter anderem das Firmware-Beispiel, Gruppenverweise beim Umbenennen und Löschen, Aktionsreihenfolge, ungültige Felder und die Wiederherstellung des gespeicherten Stands. Die Backend-Prüfungen benötigen keine zusätzliche Testframework-Abhängigkeit.
-
-API-Endpunkte:
-
-| Endpunkt | Verhalten |
-| --- | --- |
-| `GET api/entities` | Home-Assistant-Entitäten laden |
-| `POST api/config/validate` | Vollständige Konfiguration prüfen, ohne zu senden |
-| `POST api/mqtt/config` | Vollständige Konfiguration prüfen, senden und nach Brokerbestätigung speichern |
-| `GET api/config/last` | Gespeicherten Stand mit `configuration`, `sentAt`, `topic`, `qos`, `retain` lesen; HTTP 204 bei noch fehlendem Stand |
-| `POST api/mqtt/test` | Separate Testnachricht an `access_panel/test`, ohne die Panel-Konfiguration zu verändern |
+Der Editor hat keine feste Anzahlbegrenzung für Gruppen, Funktionen oder Aktionen. Die gesamte Konfiguration darf höchstens 1 MiB groß sein; zusätzlich gelten die Grenzen der Panel-Firmware.

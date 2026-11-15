@@ -1,6 +1,6 @@
 name: "Universal Access Panel"
 description: "Universal Access Panel (UAP)"
-version: "0.4.3"
+version: "0.4.4"
 slug: "access_panel"
 
 init: false

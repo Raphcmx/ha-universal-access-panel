@@ -1,3 +1,9 @@
+# 0.4.4
+
+- Funktionsbibliothek standardmäßig einklappen und separaten Server-Prüfbutton entfernen; automatische Validierung bleibt erhalten.
+- Bedienung und automatische Ausführung nach erster Bestätigung in Oberfläche und README erklären.
+- README auf Installation und Nutzung konzentrieren.
+
 # 0.4.3
 
 - Versionsnummer im Editor anzeigen, damit der geladene Frontend-Stand erkennbar ist.

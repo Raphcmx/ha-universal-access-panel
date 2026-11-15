@@ -24,7 +24,6 @@ export class AppComponent {
   loading = signal(true);
   publishing = signal(false);
   testing = signal(false);
-  checking = signal(false);
   notice = signal('');
   noticeError = signal(false);
   serverErrors = signal<string[]>([]);
@@ -203,15 +202,6 @@ export class AppComponent {
   formatDate(value: string): string { return new Date(value).toLocaleString('de-AT'); }
   private message(text: string, error = false): void { this.noticeError.set(error); this.notice.set(text); }
   private errorText(error: unknown): string { return error instanceof Error ? error.message : 'Anfrage fehlgeschlagen. Bitte Add-on und Netzwerk prüfen.'; }
-  async validateOnServer(): Promise<void> {
-    this.checking.set(true);
-    this.serverErrors.set([]);
-    try {
-      await this.request('config/validate', this.config);
-      this.message('Konfiguration ist gültig. Es wurde nichts gesendet.');
-    } catch (error) { this.message(this.errorText(error), true); }
-    finally { this.checking.set(false); }
-  }
   async publish(): Promise<void> {
     if (this.publishing() || this.errors().length) return;
     const snapshot = clone(this.config);
